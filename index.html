@@ -16,6 +16,9 @@
 
     <!-- SheetJS (XLSX) Library -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF Libraries for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         /* Menggunakan font yang lebih modern */
@@ -119,10 +122,26 @@
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold">Rincian Realisasi Pajak Daerah</h2>
-                        <button id="download-xlsx" class="flex items-center bg-green-600 text-white py-2 px-4 rounded-lg shadow hover:bg-green-700 transition">
-                            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
-                            Download .xlsx
-                        </button>
+                        <div class="relative inline-block text-left">
+                            <div>
+                                <button type="button" id="download-menu-button" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500">
+                                    Download
+                                    <i data-lucide="chevron-down" class="w-5 h-5 ml-2 -mr-1"></i>
+                                </button>
+                            </div>
+                            <div id="download-menu" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10" role="menu" aria-orientation="vertical" aria-labelledby="download-menu-button">
+                                <div class="py-1" role="none">
+                                    <a href="#" id="download-xlsx" class="text-gray-700 group flex items-center px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">
+                                        <i data-lucide="file-spreadsheet" class="w-5 h-5 mr-3 text-green-600"></i>
+                                        Download .xlsx
+                                    </a>
+                                    <a href="#" id="download-pdf" class="text-gray-700 group flex items-center px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">
+                                        <i data-lucide="file-text" class="w-5 h-5 mr-3 text-red-600"></i>
+                                        Download .pdf
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
@@ -237,7 +256,10 @@
             const transactionDateInput = document.getElementById('transaction-date');
             const subTaxTypeContainer = document.getElementById('sub-tax-type-container');
             const subTaxTypeSelect = document.getElementById('sub-tax-type');
-            const downloadBtn = document.getElementById('download-xlsx');
+            const downloadMenuButton = document.getElementById('download-menu-button');
+            const downloadMenu = document.getElementById('download-menu');
+            const downloadXlsxBtn = document.getElementById('download-xlsx');
+            const downloadPdfBtn = document.getElementById('download-pdf');
 
             document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -472,7 +494,7 @@
                         "Target": tax.target,
                         "Realisasi": tax.realization,
                         "Sisa Target": sisaTarget,
-                        "Persentase (%)": percentage.toFixed(2),
+                        "Persentase (%)": parseFloat(percentage.toFixed(2)),
                         "Status": status,
                     };
                 });
@@ -488,7 +510,7 @@
                     "Target": totalTarget,
                     "Realisasi": totalRealization,
                     "Sisa Target": totalSisaTarget,
-                    "Persentase (%)": overallPercentage.toFixed(2),
+                    "Persentase (%)": parseFloat(overallPercentage.toFixed(2)),
                     "Status": "",
                 });
 
@@ -496,23 +518,101 @@
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, "Realisasi Pajak");
                 
-                // Set column widths
-                worksheet["!cols"] = [
-                    { wch: 35 }, // Nama Pajak
-                    { wch: 20 }, // Target
-                    { wch: 20 }, // Realisasi
-                    { wch: 20 }, // Sisa Target
-                    { wch: 15 }, // Persentase
-                    { wch: 15 }, // Status
-                ];
+                worksheet["!cols"] = [ { wch: 35 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 } ];
 
                 XLSX.writeFile(workbook, "Rincian_Realisasi_Pajak_Daerah.xlsx");
             }
+            
+            function downloadPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                const tableData = getSortedData().map(tax => {
+                    const percentage = tax.target > 0 ? (tax.realization / tax.target) * 100 : 0;
+                    const sisaTarget = Math.max(0, tax.target - tax.realization);
+                    let status = '';
+                    if (percentage >= 100) status = 'Tercapai';
+                    else if (percentage >= 80) status = 'Proses';
+                    else status = 'Kurang';
+                    
+                    return [
+                        tax.name,
+                        formatFullCurrency(tax.target),
+                        formatFullCurrency(tax.realization),
+                        formatFullCurrency(sisaTarget),
+                        `${percentage.toFixed(2)}%`,
+                        status
+                    ];
+                });
+
+                const totalTarget = taxData.reduce((sum, item) => sum + item.target, 0);
+                const totalRealization = taxData.reduce((sum, item) => sum + item.realization, 0);
+                const totalSisaTarget = Math.max(0, totalTarget - totalRealization);
+                const overallPercentage = totalTarget > 0 ? (totalRealization / totalTarget) * 100 : 0;
+                
+                const totalRow = [
+                    { content: 'TOTAL', colSpan: 1, styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } },
+                    { content: formatFullCurrency(totalTarget), styles: { fontStyle: 'bold', halign: 'right', fillColor: '#f0f0f0' } },
+                    { content: formatFullCurrency(totalRealization), styles: { fontStyle: 'bold', halign: 'right', fillColor: '#f0f0f0' } },
+                    { content: formatFullCurrency(totalSisaTarget), styles: { fontStyle: 'bold', halign: 'right', fillColor: '#f0f0f0' } },
+                    { content: `${overallPercentage.toFixed(2)}%`, styles: { fontStyle: 'bold', halign: 'center', fillColor: '#f0f0f0' } },
+                    { content: '', styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } },
+                ];
+
+                doc.setFontSize(18);
+                doc.text("Rincian Realisasi Pajak Daerah", 14, 22);
+                doc.setFontSize(11);
+                doc.setTextColor(100);
+                const tgl = new Date();
+                doc.text(`Diunduh pada: ${tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 14, 29);
+
+                doc.autoTable({
+                    head: [['Nama Pajak', 'Target', 'Realisasi', 'Sisa Target', 'Persentase', 'Status']],
+                    body: tableData,
+                    foot: [totalRow],
+                    startY: 35,
+                    theme: 'grid',
+                    headStyles: { fillColor: [22, 160, 133], textColor: 255 },
+                    footStyles: { textColor: 0, fontStyle: 'bold' },
+                    styles: { halign: 'left' },
+                    columnStyles: {
+                        1: { halign: 'right' },
+                        2: { halign: 'right' },
+                        3: { halign: 'right' },
+                        4: { halign: 'center' },
+                        5: { halign: 'center' },
+                    }
+                });
+
+                doc.save('Rincian_Realisasi_Pajak_Daerah.pdf');
+            }
+
 
             function initDashboard() {
                 btnDashboard.addEventListener('click', () => switchView('dashboard'));
                 btnInput.addEventListener('click', () => switchView('input'));
-                downloadBtn.addEventListener('click', downloadXLSX);
+                
+                downloadMenuButton.addEventListener('click', () => {
+                    downloadMenu.classList.toggle('hidden');
+                });
+
+                window.addEventListener('click', function(e) {
+                    if (!downloadMenuButton.contains(e.target) && !downloadMenu.contains(e.target)) {
+                        downloadMenu.classList.add('hidden');
+                    }
+                });
+
+                downloadXlsxBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    downloadXLSX();
+                    downloadMenu.classList.add('hidden');
+                });
+                
+                downloadPdfBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    downloadPDF();
+                    downloadMenu.classList.add('hidden');
+                });
 
                 realizationTaxTypeSelect.addEventListener('change', updateSubTaxOptions);
 

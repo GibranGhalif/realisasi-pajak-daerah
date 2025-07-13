@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Realisasi Pajak Daerah</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js untuk Grafik -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Menggunakan font yang lebih modern */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style untuk sorting icon */
+        .sort-icon {
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .sortable:hover .sort-icon {
+            opacity: 1;
+        }
+        .sort-icon.active {
+            opacity: 1;
+        }
+        /* Style untuk notifikasi */
+        #notification {
+            transition: opacity 0.5s, transform 0.5s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- =================================== -->
+    <!-- =====      HALAMAN LOGIN        ===== -->
+    <!-- =================================== -->
+    <div id="login-view" class="flex items-center justify-center min-h-screen bg-gray-100">
+        <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
+            <div>
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    Login ke Dashboard
+                </h2>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    Realisasi Pajak Daerah
+                </p>
+            </div>
+            <form id="login-form" class="mt-8 space-y-6">
+                <div id="login-error" class="hidden p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                    Username atau password salah!
+                </div>
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div>
+                        <label for="username" class="sr-only">Username</label>
+                        <input id="username" name="username" type="text" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Username">
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input id="password" name="password" type="password" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Password">
+                    </div>
+                </div>
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Masuk
+                    </button>
+                </div>
+                 <div class="text-center text-xs text-gray-500">
+                    <p>Gunakan <strong>username:</strong> admin & <strong>password:</strong> admin</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =================================== -->
+    <!-- =====      APLIKASI UTAMA       ===== -->
+    <!-- =================================== -->
+    <div id="main-app" class="hidden">
+        <!-- Notifikasi -->
+        <div id="notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-[-20px]">
+            Data berhasil disimpan!
+        </div>
+
+        <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+            
+            <!-- --- Header & Tombol Navigasi --- -->
+            <header class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900">Dashboard Realisasi Pajak Daerah</h1>
+                    <p class="text-lg text-gray-600 mt-1">Analisis Pencapaian Target & Realisasi PAD</p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <button id="btn-dashboard" class="bg-blue-500 text-white py-2 px-4 rounded-lg shadow hover:bg-blue-600 transition">Dashboard</button>
+                    <button id="btn-input" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition">Input Data</button>
+                </div>
+            </header>
+
+            <!-- BAGIAN DASHBOARD -->
+            <div id="dashboard-view">
+                <!-- Ringkasan KPI -->
+                <div id="kpi-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"></div>
+                <!-- Grafik Realisasi Pajak -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+                    <h2 class="text-2xl font-bold mb-6">Grafik Realisasi vs Target per Jenis Pajak</h2>
+                    <div class="h-[400px]">
+                        <canvas id="taxChart"></canvas>
+                    </div>
+                </div>
+                <!-- Tabel Detail Pajak -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Rincian Realisasi Pajak Daerah</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b-2 border-gray-200 bg-gray-100">
+                                    <th class="p-4 text-sm font-semibold text-gray-600 cursor-pointer sortable" data-sort-key="name"><div class="flex items-center">Nama Pajak <span class="ml-2 sort-icon" data-icon-key="name"></span></div></th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Target</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Realisasi</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Sisa Target</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600 cursor-pointer sortable" data-sort-key="percentage"><div class="flex items-center">Persentase <span class="ml-2 sort-icon" data-icon-key="percentage"></span></div></th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tax-table-body"></tbody>
+                            <tfoot id="tax-table-foot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BAGIAN INPUT DATA -->
+            <div id="input-view" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Form Input Target -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold mb-6">Input Target Pajak</h2>
+                        <form id="form-target">
+                            <div id="target-input-fields" class="space-y-4 max-h-[600px] overflow-y-auto pr-2"></div>
+                            <button type="submit" class="mt-6 w-full bg-blue-500 text-white py-3 px-4 rounded-lg shadow font-semibold hover:bg-blue-600 transition">Simpan Perubahan Target</button>
+                        </form>
+                    </div>
+                    <!-- Form Input Realisasi -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold mb-6">Input Realisasi Transaksi</h2>
+                        <form id="form-realization" class="space-y-4">
+                            <div><label for="realization-tax-type" class="block text-sm font-medium text-gray-700 mb-1">Jenis Pajak</label><select id="realization-tax-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></select></div>
+                            <div id="sub-tax-type-container" class="hidden"><label for="sub-tax-type" class="block text-sm font-medium text-gray-700 mb-1">Subjenis Pajak</label><select id="sub-tax-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></select></div>
+                            <div><label for="realization-amount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Realisasi (Rp)</label><input type="number" id="realization-amount" placeholder="Contoh: 5000000" min="0" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
+                            <div><label for="transaction-date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Transaksi</label><input type="date" id="transaction-date" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
+                            <div><label for="payment-method" class="block text-sm font-medium text-gray-700 mb-1">Jenis Pembayaran/Penyetoran</label><select id="payment-method" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Transfer Bank</option><option>Tunai</option><option>QRIS</option><option>E-Wallet</option><option>Lainnya</option></select></div>
+                            <div><label for="tax-description" class="block text-sm font-medium text-gray-700 mb-1">Keterangan Pajak</label><select id="tax-description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Pokok</option><option>Tunggakan</option></select></div>
+                            <button type="submit" class="w-full bg-green-500 text-white py-3 px-4 rounded-lg shadow font-semibold hover:bg-green-600 transition !mt-6">Tambah Realisasi</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <footer class="text-center mt-12 text-gray-500 text-sm">
+                <p>Aplikasi Dashboard Realisasi Pajak Daerah &copy; <span id="year"></span></p>
+                <p>Dibuat untuk keperluan simulasi dan visualisasi data.</p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Data Pajak Awal (Contoh) ---
+            let taxData = [
+                { id: 1, name: 'Pajak Reklame', target: 15000000000, realization: 12500000000 },
+                { id: 2, name: 'Pajak Air Tanah', target: 8000000000, realization: 8100000000 },
+                { id: 3, name: 'Pajak Sarang Burung Walet', target: 500000000, realization: 350000000 },
+                { id: 4, name: 'Pajak Mineral Non Logam', target: 12000000000, realization: 11500000000 },
+                { id: 5, name: 'PBB-P2', target: 150000000000, realization: 135000000000 },
+                { id: 6, name: 'BPHTB', target: 200000000000, realization: 210500000000 },
+                { id: 7, name: 'PBJT Makanan & Minuman', target: 95000000000, realization: 89000000000 },
+                { id: 8, name: 'PBJT Jasa Hiburan', target: 25000000000, realization: 26000000000 },
+                { id: 9, name: 'PBJT Jasa Perhotelan', target: 75000000000, realization: 78000000000 },
+                { id: 10, name: 'PBJT Tenaga Listrik', target: 60000000000, realization: 58500000000 },
+                { id: 11, name: 'Opsen PKB', target: 45000000000, realization: 46000000000 },
+                { id: 12, name: 'Opsen BBNKB', target: 50000000000, realization: 49500000000 },
+                { id: 13, name: 'PBJT Jasa Parkir', target: 20000000000, realization: 18500000000 },
+            ];
+
+            const subTaxTypes = {
+              1: ["Reklame papan billboard/videotron/megatron", "Reklame kain", "Reklame melekat/stiker", "Reklame selebaran", "Reklame berjalan, termasuk pada kendaraan", "Reklame udara", "Reklame apung", "Reklame film/slide", "Reklame peragaan"],
+              2: ["Pengambilan Air Permukaan", "Pengambilan Air Bawah Tanah"],
+              4: ["Pasir", "Kerikil", "Batu Kapur", "Tanah Liat"],
+              5: ["Perdesaan", "Perkotaan"],
+              6: ["Jual beli", "Tukar-menukar", "Hibah", "Hibah wasiat", "Waris", "Pemasukan dalam perseroan/badan hukum", "Pemisahan hak yang mengakibatkan peralihan", "Penunjukan pembeli dalam lelang", "Pelaksanaan putusan hakim", "Penggabungan usaha", "Peleburan usaha", "Pemekaran usaha", "Hadiah", "Pemberian hak baru (kelanjutan pelepasan hak)", "Pemberian hak baru (di luar pelepasan hak)"],
+              7: ["Restoran", "Rumah Makan", "Kafetaria", "Jasa Boga/Katering"],
+              8: ["Bioskop", "Pagelaran Musik/Tari", "Karaoke", "Permainan Biliar"],
+              9: ["Hotel Bintang 5", "Hotel Bintang 4", "Hotel Bintang 3", "Hotel Melati", "Wisma/Losmen"],
+              10: ["Konsumsi Listrik dari PLN", "Konsumsi Listrik dari Non-PLN"],
+              13: ["Parkir Gedung/Gedung Parkir", "Parkir Pelataran/Lapangan", "Jasa Valet Parking", "Parkir Inap"],
+            };
+
+            let sortConfig = { key: 'name', direction: 'ascending' };
+            let taxChartInstance = null;
+
+            // --- Elemen DOM ---
+            const loginView = document.getElementById('login-view');
+            const mainApp = document.getElementById('main-app');
+            const loginForm = document.getElementById('login-form');
+            const loginError = document.getElementById('login-error');
+
+            const dashboardView = document.getElementById('dashboard-view');
+            const inputView = document.getElementById('input-view');
+            const btnDashboard = document.getElementById('btn-dashboard');
+            const btnInput = document.getElementById('btn-input');
+            const notification = document.getElementById('notification');
+            
+            const kpiContainer = document.getElementById('kpi-cards');
+            const tableBody = document.getElementById('tax-table-body');
+            const tableFoot = document.getElementById('tax-table-foot');
+            const chartCanvas = document.getElementById('taxChart').getContext('2d');
+            
+            const formTarget = document.getElementById('form-target');
+            const targetInputFields = document.getElementById('target-input-fields');
+            const formRealization = document.getElementById('form-realization');
+            const realizationTaxTypeSelect = document.getElementById('realization-tax-type');
+            const realizationAmountInput = document.getElementById('realization-amount');
+            const transactionDateInput = document.getElementById('transaction-date');
+            const subTaxTypeContainer = document.getElementById('sub-tax-type-container');
+            const subTaxTypeSelect = document.getElementById('sub-tax-type');
+
+            document.getElementById('year').textContent = new Date().getFullYear();
+
+            // --- Fungsi Helper ---
+            const formatCurrency = (amount) => {
+                if (amount >= 1_000_000_000) {
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: 'compact', compactDisplay: 'short' }).format(amount);
+                }
+                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+            }
+            
+            const formatFullCurrency = (amount) => {
+                 return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+            }
+
+            const getRealizationStatusHTML = (percentage) => {
+                let statusClass = '', statusText = '';
+                if (percentage >= 100) { statusClass = 'bg-green-100 text-green-800'; statusText = 'Tercapai'; } 
+                else if (percentage >= 80) { statusClass = 'bg-yellow-100 text-yellow-800'; statusText = 'Proses'; } 
+                else { statusClass = 'bg-red-100 text-red-800'; statusText = 'Kurang'; }
+                return `<span class="px-3 py-1 text-sm font-medium rounded-full ${statusClass}">${statusText}</span>`;
+            };
+
+            const createKpiCardHTML = (title, value, iconName, color, gradient) => `
+                <div class="relative p-6 rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:-translate-y-2 bg-white">
+                    <div class="absolute -top-4 -right-4 w-24 h-24 rounded-full ${gradient} opacity-20"></div>
+                    <div class="relative z-10">
+                        <div class="p-3 inline-block rounded-xl ${color}">
+                            <i data-lucide="${iconName}" class="text-white w-8 h-8"></i>
+                        </div>
+                        <p class="mt-4 text-lg text-gray-500">${title}</p>
+                        <p class="text-2xl font-extrabold text-gray-800 mt-1">${value}</p>
+                    </div>
+                </div>
+            `;
+            
+            const showNotification = (message, isError = false) => {
+                notification.textContent = message;
+                notification.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-[-20px] ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+                notification.classList.remove('opacity-0', 'translate-y-[-20px]');
+                notification.classList.add('opacity-100', 'translate-y-0');
+                setTimeout(() => {
+                    notification.classList.remove('opacity-100', 'translate-y-0');
+                    notification.classList.add('opacity-0', 'translate-y-[-20px]');
+                }, 3000);
+            };
+
+            // --- Logika Navigasi ---
+            function switchView(view) {
+                if (view === 'dashboard') {
+                    dashboardView.classList.remove('hidden');
+                    inputView.classList.add('hidden');
+                    btnDashboard.classList.replace('bg-gray-200', 'bg-blue-500');
+                    btnDashboard.classList.replace('text-gray-700', 'text-white');
+                    btnInput.classList.replace('bg-blue-500', 'bg-gray-200');
+                    btnInput.classList.replace('text-white', 'text-gray-700');
+                } else {
+                    dashboardView.classList.add('hidden');
+                    inputView.classList.remove('hidden');
+                    btnInput.classList.replace('bg-gray-200', 'bg-blue-500');
+                    btnInput.classList.replace('text-gray-700', 'text-white');
+                    btnDashboard.classList.replace('bg-blue-500', 'bg-gray-200');
+                    btnDashboard.classList.replace('text-white', 'text-gray-700');
+                    renderInputForms();
+                }
+            }
+
+            // --- Fungsi Render ---
+            function renderAll() {
+                renderKpiCards();
+                renderTable();
+                renderChart();
+                updateSortIcons();
+                lucide.createIcons();
+            }
+
+            function renderKpiCards() {
+                const totalTarget = taxData.reduce((sum, item) => sum + item.target, 0);
+                const totalRealization = taxData.reduce((sum, item) => sum + item.realization, 0);
+                const overallPercentage = totalTarget > 0 ? (totalRealization / totalTarget) * 100 : 0;
+                kpiContainer.innerHTML = 
+                    createKpiCardHTML('Total Target', formatCurrency(totalTarget), 'target', 'bg-blue-500', 'bg-gradient-to-br from-blue-200 to-blue-50') +
+                    createKpiCardHTML('Total Realisasi', formatCurrency(totalRealization), 'dollar-sign', 'bg-green-500', 'bg-gradient-to-br from-green-200 to-green-50') +
+                    createKpiCardHTML('Persentase Realisasi', `${overallPercentage.toFixed(2)}%`, 'bar-chart-2', 'bg-yellow-500', 'bg-gradient-to-br from-yellow-200 to-yellow-50') +
+                    createKpiCardHTML('Wajib Pajak Terdaftar', '125.430', 'users', 'bg-indigo-500', 'bg-gradient-to-br from-indigo-200 to-indigo-50');
+            }
+
+            function renderTable() {
+                const sortedData = getSortedData();
+                tableBody.innerHTML = sortedData.map(tax => {
+                    const percentage = tax.target > 0 ? (tax.realization / tax.target) * 100 : 0;
+                    const sisaTarget = Math.max(0, tax.target - tax.realization);
+                    return `
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="p-4 font-medium">${tax.name}</td>
+                            <td class="p-4 text-gray-600">${formatFullCurrency(tax.target)}</td>
+                            <td class="p-4 text-gray-600">${formatFullCurrency(tax.realization)}</td>
+                            <td class="p-4 text-orange-600 font-medium">${formatFullCurrency(sisaTarget)}</td>
+                            <td class="p-4">
+                                <div class="flex items-center">
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 mr-3"><div class="h-2.5 rounded-full ${percentage >= 100 ? 'bg-green-500' : 'bg-blue-500'}" style="width: ${Math.min(percentage, 100)}%"></div></div>
+                                    <span class="font-medium">${percentage.toFixed(2)}%</span>
+                                </div>
+                            </td>
+                            <td class="p-4">${getRealizationStatusHTML(percentage)}</td>
+                        </tr>`;
+                }).join('');
+                
+                const totalTarget = taxData.reduce((sum, item) => sum + item.target, 0);
+                const totalRealization = taxData.reduce((sum, item) => sum + item.realization, 0);
+                const totalSisaTarget = Math.max(0, totalTarget - totalRealization);
+                const overallPercentage = totalTarget > 0 ? (totalRealization / totalTarget) * 100 : 0;
+                
+                tableFoot.innerHTML = `
+                    <tr class="font-bold bg-gray-100">
+                        <td class="p-4">TOTAL</td>
+                        <td class="p-4">${formatFullCurrency(totalTarget)}</td>
+                        <td class="p-4">${formatFullCurrency(totalRealization)}</td>
+                        <td class="p-4 text-orange-700">${formatFullCurrency(totalSisaTarget)}</td>
+                        <td class="p-4" colspan="2">
+                            <div class="flex items-center">
+                                <div class="w-full bg-gray-300 rounded-full h-3 mr-3"><div class="h-3 rounded-full ${overallPercentage >= 100 ? 'bg-green-600' : 'bg-blue-600'}" style="width: ${Math.min(overallPercentage, 100)}%"></div></div>
+                                <span class="font-bold text-lg">${overallPercentage.toFixed(2)}%</span>
+                            </div>
+                        </td>
+                    </tr>`;
+            }
+
+            function renderChart() {
+                if (taxChartInstance) taxChartInstance.destroy();
+                taxChartInstance = new Chart(chartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: taxData.map(d => d.name),
+                        datasets: [
+                            { label: 'Target', data: taxData.map(d => d.target), backgroundColor: '#60a5fa', borderRadius: 8 },
+                            { label: 'Realisasi', data: taxData.map(d => d.realization), backgroundColor: '#4ade80', borderRadius: 8 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: (value) => new Intl.NumberFormat('id-ID', { notation: 'compact', compactDisplay: 'short' }).format(value), color: '#4A5568' }, grid: { color: '#e0e0e0', borderDash: [3, 3] } },
+                            x: { ticks: { color: '#4A5568', maxRotation: 15, minRotation: 15 }, grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { position: 'top', labels: { padding: 20, font: { size: 14 } } },
+                            tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatFullCurrency(context.raw)}` }, backgroundColor: 'rgba(255, 255, 255, 0.9)', titleColor: '#333', bodyColor: '#333', borderColor: '#ccc', borderWidth: 1, borderRadius: 10, padding: 10 }
+                        }
+                    }
+                });
+            }
+
+            function renderInputForms() {
+                targetInputFields.innerHTML = taxData.map(tax => `
+                    <div>
+                        <label for="target-${tax.id}" class="block text-sm font-medium text-gray-700">${tax.name}</label>
+                        <input type="number" id="target-${tax.id}" data-id="${tax.id}" value="${tax.target}" min="0" required class="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                `).join('');
+
+                realizationTaxTypeSelect.innerHTML = taxData.map(tax => `<option value="${tax.id}">${tax.name}</option>`).join('');
+                transactionDateInput.valueAsDate = new Date();
+                updateSubTaxOptions();
+            }
+
+            function updateSubTaxOptions() {
+                const selectedTaxId = realizationTaxTypeSelect.value;
+                const subtypes = subTaxTypes[selectedTaxId] || [];
+
+                if (subtypes.length > 0) {
+                    subTaxTypeSelect.innerHTML = subtypes.map(subtype => `<option>${subtype}</option>`).join('');
+                    subTaxTypeContainer.classList.remove('hidden');
+                } else {
+                    subTaxTypeContainer.classList.add('hidden');
+                    subTaxTypeSelect.innerHTML = '';
+                }
+            }
+            
+            // --- Logika Sorting ---
+            function updateSortIcons() {
+                document.querySelectorAll('.sort-icon').forEach(icon => {
+                    const key = icon.getAttribute('data-icon-key');
+                    if (key === sortConfig.key) {
+                        icon.innerHTML = sortConfig.direction === 'ascending' ? '<i data-lucide="chevron-up" class="w-4 h-4"></i>' : '<i data-lucide="chevron-down" class="w-4 h-4"></i>';
+                        icon.classList.add('active');
+                    } else {
+                        icon.innerHTML = '<i data-lucide="chevron-down" class="w-4 h-4"></i>';
+                        icon.classList.remove('active');
+                    }
+                });
+                lucide.createIcons();
+            }
+
+            function getSortedData() {
+                return [...taxData].sort((a, b) => {
+                    let aValue, bValue;
+                    if (sortConfig.key === 'name') { aValue = a.name; bValue = b.name; } 
+                    else { aValue = a.target > 0 ? a.realization / a.target : 0; bValue = b.target > 0 ? b.realization / b.target : 0; }
+                    if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                    if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // --- Event Listeners ---
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = e.target.username.value;
+                const password = e.target.password.value;
+
+                if (username === 'admin' && password === 'admin') {
+                    loginView.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    initDashboard();
+                } else {
+                    loginError.classList.remove('hidden');
+                }
+            });
+
+            function initDashboard() {
+                btnDashboard.addEventListener('click', () => switchView('dashboard'));
+                btnInput.addEventListener('click', () => switchView('input'));
+
+                realizationTaxTypeSelect.addEventListener('change', updateSubTaxOptions);
+
+                document.querySelectorAll('.sortable').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const key = header.getAttribute('data-sort-key');
+                        let direction = 'ascending';
+                        if (sortConfig.key === key && sortConfig.direction === 'ascending') direction = 'descending';
+                        sortConfig = { key, direction };
+                        renderTable();
+                        updateSortIcons();
+                    });
+                });
+
+                formTarget.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const inputs = targetInputFields.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        const taxId = parseInt(input.dataset.id);
+                        const newTarget = parseInt(input.value);
+                        const taxItem = taxData.find(t => t.id === taxId);
+                        if (taxItem && !isNaN(newTarget)) {
+                            taxItem.target = newTarget;
+                        }
+                    });
+                    renderAll();
+                    showNotification('Data target berhasil diperbarui!');
+                });
+
+                formRealization.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const taxId = parseInt(realizationTaxTypeSelect.value);
+                    const amount = parseInt(realizationAmountInput.value);
+                    const transactionDate = document.getElementById('transaction-date').value;
+                    const paymentMethod = document.getElementById('payment-method').value;
+                    const taxDescription = document.getElementById('tax-description').value;
+                    const subTax = subTaxTypeSelect.value;
+
+                    if (isNaN(amount) || amount <= 0) {
+                        showNotification('Jumlah realisasi tidak valid!', true);
+                        return;
+                    }
+                    if (!transactionDate) {
+                        showNotification('Tanggal transaksi harus diisi!', true);
+                        return;
+                    }
+
+                    const taxItem = taxData.find(t => t.id === taxId);
+                    if (taxItem) {
+                        taxItem.realization += amount;
+                    }
+                    
+                    console.log({
+                        taxId: taxId,
+                        taxName: taxItem.name,
+                        subTax: subTax || 'N/A',
+                        amount: amount,
+                        transactionDate: transactionDate,
+                        paymentMethod: paymentMethod,
+                        taxDescription: taxDescription,
+                    });
+                    
+                    renderAll();
+                    showNotification(`Realisasi untuk ${taxItem.name} berhasil ditambahkan!`);
+                    formRealization.reset();
+                    transactionDateInput.valueAsDate = new Date();
+                    updateSubTaxOptions();
+                });
+
+                renderAll();
+                switchView('dashboard');
+            }
+        });
+    </script>
+
+</body>
+</html>

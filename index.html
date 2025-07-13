@@ -14,6 +14,9 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- SheetJS (XLSX) Library -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
     <style>
         /* Menggunakan font yang lebih modern */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -114,7 +117,13 @@
                 </div>
                 <!-- Tabel Detail Pajak -->
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-bold mb-6">Rincian Realisasi Pajak Daerah</h2>
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Rincian Realisasi Pajak Daerah</h2>
+                        <button id="download-xlsx" class="flex items-center bg-green-600 text-white py-2 px-4 rounded-lg shadow hover:bg-green-700 transition">
+                            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                            Download .xlsx
+                        </button>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead>
@@ -228,6 +237,7 @@
             const transactionDateInput = document.getElementById('transaction-date');
             const subTaxTypeContainer = document.getElementById('sub-tax-type-container');
             const subTaxTypeSelect = document.getElementById('sub-tax-type');
+            const downloadBtn = document.getElementById('download-xlsx');
 
             document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -448,9 +458,61 @@
                 }
             });
 
+            function downloadXLSX() {
+                const dataToExport = getSortedData().map(tax => {
+                    const percentage = tax.target > 0 ? (tax.realization / tax.target) * 100 : 0;
+                    const sisaTarget = Math.max(0, tax.target - tax.realization);
+                    let status = '';
+                    if (percentage >= 100) status = 'Tercapai';
+                    else if (percentage >= 80) status = 'Proses';
+                    else status = 'Kurang';
+
+                    return {
+                        "Nama Pajak": tax.name,
+                        "Target": tax.target,
+                        "Realisasi": tax.realization,
+                        "Sisa Target": sisaTarget,
+                        "Persentase (%)": percentage.toFixed(2),
+                        "Status": status,
+                    };
+                });
+
+                const totalTarget = taxData.reduce((sum, item) => sum + item.target, 0);
+                const totalRealization = taxData.reduce((sum, item) => sum + item.realization, 0);
+                const totalSisaTarget = Math.max(0, totalTarget - totalRealization);
+                const overallPercentage = totalTarget > 0 ? (totalRealization / totalTarget) * 100 : 0;
+
+                dataToExport.push({}); // Add a blank row for spacing
+                dataToExport.push({
+                    "Nama Pajak": "TOTAL",
+                    "Target": totalTarget,
+                    "Realisasi": totalRealization,
+                    "Sisa Target": totalSisaTarget,
+                    "Persentase (%)": overallPercentage.toFixed(2),
+                    "Status": "",
+                });
+
+                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Realisasi Pajak");
+                
+                // Set column widths
+                worksheet["!cols"] = [
+                    { wch: 35 }, // Nama Pajak
+                    { wch: 20 }, // Target
+                    { wch: 20 }, // Realisasi
+                    { wch: 20 }, // Sisa Target
+                    { wch: 15 }, // Persentase
+                    { wch: 15 }, // Status
+                ];
+
+                XLSX.writeFile(workbook, "Rincian_Realisasi_Pajak_Daerah.xlsx");
+            }
+
             function initDashboard() {
                 btnDashboard.addEventListener('click', () => switchView('dashboard'));
                 btnInput.addEventListener('click', () => switchView('input'));
+                downloadBtn.addEventListener('click', downloadXLSX);
 
                 realizationTaxTypeSelect.addEventListener('change', updateSubTaxOptions);
 

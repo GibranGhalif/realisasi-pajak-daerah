@@ -93,6 +93,32 @@
             Data berhasil disimpan!
         </div>
 
+        <!-- Modal Konfirmasi Hapus -->
+        <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                        <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
+                    </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Hapus Transaksi</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500">
+                            Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="confirm-delete-btn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                            Ya, Hapus
+                        </button>
+                        <button id="cancel-delete-btn" class="px-4 py-2 bg-gray-200 text-gray-900 text-base font-medium rounded-md w-auto ml-2 shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
         <div class="container mx-auto p-4 sm:p-6 lg:p-8">
             
             <!-- --- Header & Tombol Navigasi --- -->
@@ -198,9 +224,12 @@
                     <div class="bg-white p-6 rounded-2xl shadow-lg">
                         <h2 class="text-2xl font-bold mb-6">Input Realisasi Transaksi</h2>
                         <form id="form-realization" class="space-y-4">
+                            <div><label for="taxpayer-name" class="block text-sm font-medium text-gray-700 mb-1">Nama Wajib Pajak</label><input type="text" id="taxpayer-name" placeholder="Masukkan Nama WP" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
+                            <div><label for="business-name" class="block text-sm font-medium text-gray-700 mb-1">Nama Usaha</label><input type="text" id="business-name" placeholder="Masukkan Nama Usaha" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
                             <div><label for="realization-tax-type" class="block text-sm font-medium text-gray-700 mb-1">Jenis Pajak</label><select id="realization-tax-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></select></div>
                             <div id="sub-tax-type-container" class="hidden"><label for="sub-tax-type" class="block text-sm font-medium text-gray-700 mb-1">Subjenis Pajak</label><select id="sub-tax-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></select></div>
-                            <div><label for="realization-amount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Realisasi (Rp)</label><input type="number" id="realization-amount" placeholder="Contoh: 5000000" min="0" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
+                            <div><label for="realization-amount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Realisasi Pokok (Rp)</label><input type="number" id="realization-amount" placeholder="Contoh: 5000000" min="0" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
+                            <div><label for="fine-amount" class="block text-sm font-medium text-gray-700 mb-1">Nilai Denda (Rp)</label><input type="number" id="fine-amount" placeholder="Kosongkan jika tidak ada" min="0" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
                             <div><label for="transaction-date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Transaksi</label><input type="date" id="transaction-date" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
                             <div><label for="payment-method" class="block text-sm font-medium text-gray-700 mb-1">Jenis Pembayaran/Penyetoran</label><select id="payment-method" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Transfer Bank</option><option>Tunai</option><option>QRIS</option><option>E-Wallet</option><option>Lainnya</option></select></div>
                             <div><label for="tax-description" class="block text-sm font-medium text-gray-700 mb-1">Keterangan Pajak</label><select id="tax-description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Pokok</option><option>Tunggakan</option></select></div>
@@ -215,7 +244,7 @@
                  <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Rekapitulasi Transaksi Realisasi</h2>
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-4 flex-wrap">
                             <div>
                                 <label for="start-date" class="text-sm font-medium text-gray-700">Tgl Awal</label>
                                 <input type="date" id="start-date" class="p-2 border border-gray-300 rounded-lg">
@@ -251,11 +280,13 @@
                             <thead>
                                 <tr class="border-b-2 border-gray-200 bg-gray-100">
                                     <th class="p-4 text-sm font-semibold text-gray-600">Tanggal</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Nama WP</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Nama Usaha</th>
                                     <th class="p-4 text-sm font-semibold text-gray-600">Jenis Pajak</th>
-                                    <th class="p-4 text-sm font-semibold text-gray-600">Subjenis Pajak</th>
-                                    <th class="p-4 text-sm font-semibold text-gray-600">Jumlah</th>
-                                    <th class="p-4 text-sm font-semibold text-gray-600">Metode Bayar</th>
-                                    <th class="p-4 text-sm font-semibold text-gray-600">Keterangan</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Jumlah Pokok</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Denda</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Total Bayar</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="recap-table-body">
@@ -310,6 +341,7 @@
             let sortConfig = { key: 'name', direction: 'ascending' };
             let taxChartInstance = null;
             let monthlyChartInstance = null;
+            let transactionToDeleteId = null;
 
             // --- Elemen DOM ---
             const loginView = document.getElementById('login-view');
@@ -338,6 +370,9 @@
             const formRealization = document.getElementById('form-realization');
             const realizationTaxTypeSelect = document.getElementById('realization-tax-type');
             const realizationAmountInput = document.getElementById('realization-amount');
+            const fineAmountInput = document.getElementById('fine-amount');
+            const taxpayerNameInput = document.getElementById('taxpayer-name');
+            const businessNameInput = document.getElementById('business-name');
             const transactionDateInput = document.getElementById('transaction-date');
             const subTaxTypeContainer = document.getElementById('sub-tax-type-container');
             const subTaxTypeSelect = document.getElementById('sub-tax-type');
@@ -352,6 +387,9 @@
             const recapDownloadPdfBtn = document.getElementById('recap-download-pdf');
             const startDateInput = document.getElementById('start-date');
             const endDateInput = document.getElementById('end-date');
+            const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
 
 
             document.getElementById('year').textContent = new Date().getFullYear();
@@ -535,11 +573,11 @@
                 todayList.innerHTML = todayTransactions.map(log => `
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-gray-600">${log.taxName}</span>
-                        <span class="font-semibold">${formatFullCurrency(log.amount)}</span>
+                        <span class="font-semibold">${formatFullCurrency(log.totalPayment)}</span>
                     </div>
                 `).join('');
 
-                const total = todayTransactions.reduce((sum, log) => sum + log.amount, 0);
+                const total = todayTransactions.reduce((sum, log) => sum + log.totalPayment, 0);
                 todayTotal.innerHTML = `Total Hari Ini: ${formatFullCurrency(total)}`;
             }
 
@@ -549,7 +587,7 @@
                     if (!acc[month]) {
                         acc[month] = 0;
                     }
-                    acc[month] += log.amount;
+                    acc[month] += log.totalPayment;
                     return acc;
                 }, {});
 
@@ -621,20 +659,27 @@
                 }
 
                 if (filteredLogs.length === 0) {
-                    recapTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">Tidak ada transaksi pada rentang tanggal yang dipilih.</td></tr>`;
+                    recapTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-500">Tidak ada transaksi pada rentang tanggal yang dipilih.</td></tr>`;
                     return;
                 }
 
                 recapTableBody.innerHTML = filteredLogs.map(log => `
                      <tr class="border-b border-gray-100 hover:bg-gray-50">
                         <td class="p-4">${log.transactionDate}</td>
+                        <td class="p-4">${log.taxpayerName}</td>
+                        <td class="p-4">${log.businessName}</td>
                         <td class="p-4">${log.taxName}</td>
-                        <td class="p-4">${log.subTax}</td>
                         <td class="p-4 text-right">${formatFullCurrency(log.amount)}</td>
-                        <td class="p-4">${log.paymentMethod}</td>
-                        <td class="p-4">${log.taxDescription}</td>
+                        <td class="p-4 text-right">${formatFullCurrency(log.fineAmount)}</td>
+                        <td class="p-4 text-right font-semibold">${formatFullCurrency(log.totalPayment)}</td>
+                        <td class="p-4 text-center">
+                            <button class="delete-transaction-btn p-2 text-red-600 hover:text-red-800" data-id="${log.id}">
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                            </button>
+                        </td>
                     </tr>
                 `).join('');
+                lucide.createIcons();
             }
 
             function updateSubTaxOptions() {
@@ -674,6 +719,37 @@
                     if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
                     return 0;
                 });
+            }
+
+            // --- Logika Hapus ---
+            function showDeleteModal(transactionId) {
+                transactionToDeleteId = transactionId;
+                deleteConfirmModal.classList.remove('hidden');
+            }
+
+            function hideDeleteModal() {
+                transactionToDeleteId = null;
+                deleteConfirmModal.classList.add('hidden');
+            }
+
+            function deleteTransaction() {
+                if (!transactionToDeleteId) return;
+
+                const transactionIndex = transactionLog.findIndex(log => log.id === transactionToDeleteId);
+                if (transactionIndex === -1) return;
+
+                const transaction = transactionLog[transactionIndex];
+                const taxItem = taxData.find(t => t.id === transaction.taxId);
+                if (taxItem) {
+                    taxItem.realization -= transaction.totalPayment;
+                }
+
+                transactionLog.splice(transactionIndex, 1);
+                
+                hideDeleteModal();
+                renderAll();
+                filterAndRenderRecap();
+                showNotification("Transaksi berhasil dihapus.");
             }
 
             // --- Event Listeners ---
@@ -815,12 +891,14 @@
 
             function downloadRecapXLSX() {
                 const dataToExport = getFilteredRecapData().map(log => ({
-                    "Tanggal Transaksi": log.transactionDate,
+                    "Tanggal": log.transactionDate,
+                    "Nama WP": log.taxpayerName,
+                    "Nama Usaha": log.businessName,
                     "Jenis Pajak": log.taxName,
                     "Subjenis Pajak": log.subTax,
-                    "Jumlah": log.amount,
-                    "Metode Pembayaran": log.paymentMethod,
-                    "Keterangan": log.taxDescription,
+                    "Jumlah Pokok": log.amount,
+                    "Denda": log.fineAmount,
+                    "Total Bayar": log.totalPayment,
                 }));
 
                 if(dataToExport.length === 0){
@@ -832,14 +910,14 @@
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Transaksi");
                 
-                worksheet["!cols"] = [ { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 15 } ];
+                worksheet["!cols"] = [ { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 } ];
 
                 XLSX.writeFile(workbook, `Rekap_Transaksi_${startDateInput.value}_sd_${endDateInput.value}.xlsx`);
             }
             
             function downloadRecapPDF() {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+                const doc = new jsPDF('landscape');
                 const filteredData = getFilteredRecapData();
 
                 if(filteredData.length === 0){
@@ -849,30 +927,29 @@
                 
                 const tableData = filteredData.map(log => [
                     log.transactionDate,
+                    log.taxpayerName,
+                    log.businessName,
                     log.taxName,
-                    log.subTax,
                     formatFullCurrency(log.amount),
-                    log.paymentMethod,
-                    log.taxDescription
+                    formatFullCurrency(log.fineAmount),
+                    formatFullCurrency(log.totalPayment)
                 ]);
                 
-                const totalAmount = filteredData.reduce((sum, log) => sum + log.amount, 0);
+                const totalAmount = filteredData.reduce((sum, log) => sum + log.totalPayment, 0);
                 const totalRow = [
-                    { content: 'TOTAL', colSpan: 3, styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } },
+                    { content: 'TOTAL', colSpan: 6, styles: { fontStyle: 'bold', fillColor: '#f0f0f0', halign: 'center' } },
                     { content: formatFullCurrency(totalAmount), styles: { fontStyle: 'bold', halign: 'right', fillColor: '#f0f0f0' } },
-                    { content: '', colSpan: 2, styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } },
                 ];
 
                 doc.setFontSize(18);
                 doc.text("Rekapitulasi Transaksi Realisasi", 14, 22);
                 doc.setFontSize(11);
                 doc.setTextColor(100);
-                const tgl = new Date();
                 const dateRange = `Periode: ${startDateInput.value || 'Semua'} s/d ${endDateInput.value || 'Semua'}`;
                 doc.text(dateRange, 14, 29);
 
                 doc.autoTable({
-                    head: [['Tanggal', 'Jenis Pajak', 'Subjenis', 'Jumlah', 'Metode Bayar', 'Keterangan']],
+                    head: [['Tanggal', 'Nama WP', 'Nama Usaha', 'Jenis Pajak', 'Jumlah Pokok', 'Denda', 'Total Bayar']],
                     body: tableData,
                     foot: [totalRow],
                     startY: 35,
@@ -881,7 +958,9 @@
                     footStyles: { textColor: 0, fontStyle: 'bold' },
                     styles: { halign: 'left', fontSize: 8 },
                     columnStyles: {
-                        3: { halign: 'right' },
+                        4: { halign: 'right' },
+                        5: { halign: 'right' },
+                        6: { halign: 'right' },
                     }
                 });
 
@@ -950,12 +1029,16 @@
                     e.preventDefault();
                     const taxId = parseInt(realizationTaxTypeSelect.value);
                     const amount = parseInt(realizationAmountInput.value);
+                    const fineAmount = parseInt(fineAmountInput.value) || 0;
+                    const totalPayment = amount + fineAmount;
+                    const taxpayerName = taxpayerNameInput.value;
+                    const businessName = businessNameInput.value;
                     const transactionDate = document.getElementById('transaction-date').value;
                     const paymentMethod = document.getElementById('payment-method').value;
                     const taxDescription = document.getElementById('tax-description').value;
                     const subTax = subTaxTypeSelect.value;
 
-                    if (isNaN(amount) || amount <= 0) {
+                    if (isNaN(amount) || amount < 0) {
                         showNotification('Jumlah realisasi tidak valid!', true);
                         return;
                     }
@@ -963,17 +1046,26 @@
                         showNotification('Tanggal transaksi harus diisi!', true);
                         return;
                     }
+                     if (!taxpayerName || !businessName) {
+                        showNotification('Nama Wajib Pajak dan Nama Usaha harus diisi!', true);
+                        return;
+                    }
 
                     const taxItem = taxData.find(t => t.id === taxId);
                     if (taxItem) {
-                        taxItem.realization += amount;
+                        taxItem.realization += totalPayment;
                     }
                     
                     const newTransaction = {
+                        id: Date.now(), // Unique ID for deletion
                         taxId: taxId,
                         taxName: taxItem.name,
                         subTax: subTax || 'N/A',
                         amount: amount,
+                        fineAmount: fineAmount,
+                        totalPayment: totalPayment,
+                        taxpayerName: taxpayerName,
+                        businessName: businessName,
                         transactionDate: transactionDate,
                         paymentMethod: paymentMethod,
                         taxDescription: taxDescription,
@@ -986,6 +1078,18 @@
                     transactionDateInput.valueAsDate = new Date();
                     updateSubTaxOptions();
                 });
+                
+                recapTableBody.addEventListener('click', function(e) {
+                    const deleteButton = e.target.closest('.delete-transaction-btn');
+                    if (deleteButton) {
+                        const transactionId = parseInt(deleteButton.dataset.id);
+                        showDeleteModal(transactionId);
+                    }
+                });
+
+                confirmDeleteBtn.addEventListener('click', deleteTransaction);
+                cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+
 
                 renderAll();
                 switchView('dashboard');

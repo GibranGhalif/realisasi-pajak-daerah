@@ -101,9 +101,10 @@
                     <h1 class="text-4xl font-bold text-gray-900">Dashboard Realisasi Pajak Daerah</h1>
                     <p class="text-lg text-gray-600 mt-1">Analisis Pencapaian Target & Realisasi PAD</p>
                 </div>
-                <div class="mt-4 sm:mt-0">
+                <div class="mt-4 sm:mt-0 flex space-x-2">
                     <button id="btn-dashboard" class="bg-blue-500 text-white py-2 px-4 rounded-lg shadow hover:bg-blue-600 transition">Dashboard</button>
                     <button id="btn-input" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition">Input Data</button>
+                    <button id="btn-recap" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition">Rekap Transaksi</button>
                 </div>
             </header>
 
@@ -111,6 +112,26 @@
             <div id="dashboard-view">
                 <!-- Ringkasan KPI -->
                 <div id="kpi-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"></div>
+                
+                <!-- Realisasi Harian dan Bulanan -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold mb-4">Realisasi Hari Ini</h2>
+                        <div id="today-realization-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                            <!-- Daftar realisasi hari ini akan dirender di sini -->
+                        </div>
+                        <div id="today-total" class="mt-4 pt-4 border-t border-gray-200 text-right font-bold text-lg">
+                            <!-- Total hari ini akan dirender di sini -->
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold mb-4">Grafik Realisasi per Bulan</h2>
+                        <div class="h-[318px]">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Grafik Realisasi Pajak -->
                 <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
                     <h2 class="text-2xl font-bold mb-6">Grafik Realisasi vs Target per Jenis Pajak</h2>
@@ -189,6 +210,62 @@
                 </div>
             </div>
             
+            <!-- BAGIAN REKAP TRANSAKSI -->
+            <div id="recap-view" class="hidden">
+                 <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold">Rekapitulasi Transaksi Realisasi</h2>
+                        <div class="flex items-center gap-4">
+                            <div>
+                                <label for="start-date" class="text-sm font-medium text-gray-700">Tgl Awal</label>
+                                <input type="date" id="start-date" class="p-2 border border-gray-300 rounded-lg">
+                            </div>
+                             <div>
+                                <label for="end-date" class="text-sm font-medium text-gray-700">Tgl Akhir</label>
+                                <input type="date" id="end-date" class="p-2 border border-gray-300 rounded-lg">
+                            </div>
+                             <div class="relative inline-block text-left pt-5">
+                                <div>
+                                    <button type="button" id="recap-download-menu-button" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500">
+                                        Download
+                                        <i data-lucide="chevron-down" class="w-5 h-5 ml-2 -mr-1"></i>
+                                    </button>
+                                </div>
+                                <div id="recap-download-menu" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10" role="menu" aria-orientation="vertical" aria-labelledby="recap-download-menu-button">
+                                    <div class="py-1" role="none">
+                                        <a href="#" id="recap-download-xlsx" class="text-gray-700 group flex items-center px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">
+                                            <i data-lucide="file-spreadsheet" class="w-5 h-5 mr-3 text-green-600"></i>
+                                            Download .xlsx
+                                        </a>
+                                        <a href="#" id="recap-download-pdf" class="text-gray-700 group flex items-center px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">
+                                            <i data-lucide="file-text" class="w-5 h-5 mr-3 text-red-600"></i>
+                                            Download .pdf
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b-2 border-gray-200 bg-gray-100">
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Tanggal</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Jenis Pajak</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Subjenis Pajak</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Jumlah</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Metode Bayar</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recap-table-body">
+                                <!-- Data rekap akan di-render di sini -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <footer class="text-center mt-12 text-gray-500 text-sm">
                 <p>Aplikasi Dashboard Realisasi Pajak Daerah &copy; <span id="year"></span></p>
                 <p>Dibuat untuk keperluan simulasi dan visualisasi data.</p>
@@ -200,20 +277,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- Data Pajak Awal (Contoh) ---
             let taxData = [
-                { id: 1, name: 'Pajak Reklame', target: 15000000000, realization: 12500000000 },
-                { id: 2, name: 'Pajak Air Tanah', target: 8000000000, realization: 8100000000 },
-                { id: 3, name: 'Pajak Sarang Burung Walet', target: 500000000, realization: 350000000 },
-                { id: 4, name: 'Pajak Mineral Non Logam', target: 12000000000, realization: 11500000000 },
-                { id: 5, name: 'PBB-P2', target: 150000000000, realization: 135000000000 },
-                { id: 6, name: 'BPHTB', target: 200000000000, realization: 210500000000 },
-                { id: 7, name: 'PBJT Makanan & Minuman', target: 95000000000, realization: 89000000000 },
-                { id: 8, name: 'PBJT Jasa Hiburan', target: 25000000000, realization: 26000000000 },
-                { id: 9, name: 'PBJT Jasa Perhotelan', target: 75000000000, realization: 78000000000 },
-                { id: 10, name: 'PBJT Tenaga Listrik', target: 60000000000, realization: 58500000000 },
-                { id: 11, name: 'Opsen PKB', target: 45000000000, realization: 46000000000 },
-                { id: 12, name: 'Opsen BBNKB', target: 50000000000, realization: 49500000000 },
-                { id: 13, name: 'PBJT Jasa Parkir', target: 20000000000, realization: 18500000000 },
+                { id: 1, name: 'Pajak Reklame', target: 15000000000, realization: 0 },
+                { id: 2, name: 'Pajak Air Tanah', target: 8000000000, realization: 0 },
+                { id: 3, name: 'Pajak Sarang Burung Walet', target: 500000000, realization: 0 },
+                { id: 4, name: 'Pajak Mineral Non Logam', target: 12000000000, realization: 0 },
+                { id: 5, name: 'PBB-P2', target: 150000000000, realization: 0 },
+                { id: 6, name: 'BPHTB', target: 200000000000, realization: 0 },
+                { id: 7, name: 'PBJT Makanan & Minuman', target: 95000000000, realization: 0 },
+                { id: 8, name: 'PBJT Jasa Hiburan', target: 25000000000, realization: 0 },
+                { id: 9, name: 'PBJT Jasa Perhotelan', target: 75000000000, realization: 0 },
+                { id: 10, name: 'PBJT Tenaga Listrik', target: 60000000000, realization: 0 },
+                { id: 11, name: 'Opsen PKB', target: 45000000000, realization: 0 },
+                { id: 12, name: 'Opsen BBNKB', target: 50000000000, realization: 0 },
+                { id: 13, name: 'PBJT Jasa Parkir', target: 20000000000, realization: 0 },
             ];
+            
+            let transactionLog = [];
 
             const subTaxTypes = {
               1: ["Reklame papan billboard/videotron/megatron", "Reklame kain", "Reklame melekat/stiker", "Reklame selebaran", "Reklame berjalan, termasuk pada kendaraan", "Reklame udara", "Reklame apung", "Reklame film/slide", "Reklame peragaan"],
@@ -230,6 +309,7 @@
 
             let sortConfig = { key: 'name', direction: 'ascending' };
             let taxChartInstance = null;
+            let monthlyChartInstance = null;
 
             // --- Elemen DOM ---
             const loginView = document.getElementById('login-view');
@@ -239,14 +319,19 @@
 
             const dashboardView = document.getElementById('dashboard-view');
             const inputView = document.getElementById('input-view');
+            const recapView = document.getElementById('recap-view');
             const btnDashboard = document.getElementById('btn-dashboard');
             const btnInput = document.getElementById('btn-input');
+            const btnRecap = document.getElementById('btn-recap');
             const notification = document.getElementById('notification');
             
             const kpiContainer = document.getElementById('kpi-cards');
             const tableBody = document.getElementById('tax-table-body');
             const tableFoot = document.getElementById('tax-table-foot');
             const chartCanvas = document.getElementById('taxChart').getContext('2d');
+            const monthlyChartCanvas = document.getElementById('monthlyChart').getContext('2d');
+            const todayList = document.getElementById('today-realization-list');
+            const todayTotal = document.getElementById('today-total');
             
             const formTarget = document.getElementById('form-target');
             const targetInputFields = document.getElementById('target-input-fields');
@@ -260,6 +345,14 @@
             const downloadMenu = document.getElementById('download-menu');
             const downloadXlsxBtn = document.getElementById('download-xlsx');
             const downloadPdfBtn = document.getElementById('download-pdf');
+            const recapTableBody = document.getElementById('recap-table-body');
+            const recapDownloadMenuButton = document.getElementById('recap-download-menu-button');
+            const recapDownloadMenu = document.getElementById('recap-download-menu');
+            const recapDownloadXlsxBtn = document.getElementById('recap-download-xlsx');
+            const recapDownloadPdfBtn = document.getElementById('recap-download-pdf');
+            const startDateInput = document.getElementById('start-date');
+            const endDateInput = document.getElementById('end-date');
+
 
             document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -309,21 +402,35 @@
 
             // --- Logika Navigasi ---
             function switchView(view) {
-                if (view === 'dashboard') {
-                    dashboardView.classList.remove('hidden');
-                    inputView.classList.add('hidden');
-                    btnDashboard.classList.replace('bg-gray-200', 'bg-blue-500');
-                    btnDashboard.classList.replace('text-gray-700', 'text-white');
-                    btnInput.classList.replace('bg-blue-500', 'bg-gray-200');
-                    btnInput.classList.replace('text-white', 'text-gray-700');
-                } else {
-                    dashboardView.classList.add('hidden');
-                    inputView.classList.remove('hidden');
-                    btnInput.classList.replace('bg-gray-200', 'bg-blue-500');
-                    btnInput.classList.replace('text-gray-700', 'text-white');
-                    btnDashboard.classList.replace('bg-blue-500', 'bg-gray-200');
-                    btnDashboard.classList.replace('text-white', 'text-gray-700');
+                const views = {
+                    dashboard: dashboardView,
+                    input: inputView,
+                    recap: recapView
+                };
+                const buttons = {
+                    dashboard: btnDashboard,
+                    input: btnInput,
+                    recap: btnRecap
+                };
+
+                // Hide all views
+                Object.values(views).forEach(v => v.classList.add('hidden'));
+                // Reset all button styles
+                Object.values(buttons).forEach(b => {
+                    b.classList.replace('bg-blue-500', 'bg-gray-200');
+                    b.classList.replace('text-white', 'text-gray-700');
+                });
+
+                // Show the selected view and update its button style
+                views[view].classList.remove('hidden');
+                buttons[view].classList.replace('bg-gray-200', 'bg-blue-500');
+                buttons[view].classList.replace('text-gray-700', 'text-white');
+
+                // Render specific content for the view
+                if (view === 'input') {
                     renderInputForms();
+                } else if (view === 'recap') {
+                    filterAndRenderRecap();
                 }
             }
 
@@ -332,6 +439,8 @@
                 renderKpiCards();
                 renderTable();
                 renderChart();
+                renderTodayRealization();
+                renderMonthlyChart();
                 updateSortIcons();
                 lucide.createIcons();
             }
@@ -413,6 +522,75 @@
                 });
             }
 
+            function renderTodayRealization() {
+                const today = new Date().toISOString().slice(0, 10);
+                const todayTransactions = transactionLog.filter(log => log.transactionDate === today);
+
+                if (todayTransactions.length === 0) {
+                    todayList.innerHTML = `<p class="text-gray-500 text-center py-8">Belum ada realisasi hari ini.</p>`;
+                    todayTotal.innerHTML = `Total Hari Ini: ${formatFullCurrency(0)}`;
+                    return;
+                }
+
+                todayList.innerHTML = todayTransactions.map(log => `
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-600">${log.taxName}</span>
+                        <span class="font-semibold">${formatFullCurrency(log.amount)}</span>
+                    </div>
+                `).join('');
+
+                const total = todayTransactions.reduce((sum, log) => sum + log.amount, 0);
+                todayTotal.innerHTML = `Total Hari Ini: ${formatFullCurrency(total)}`;
+            }
+
+            function renderMonthlyChart() {
+                const monthlyData = transactionLog.reduce((acc, log) => {
+                    const month = log.transactionDate.slice(0, 7); // YYYY-MM
+                    if (!acc[month]) {
+                        acc[month] = 0;
+                    }
+                    acc[month] += log.amount;
+                    return acc;
+                }, {});
+
+                const sortedMonths = Object.keys(monthlyData).sort();
+                
+                const labels = sortedMonths.map(month => {
+                    const [year, monthNum] = month.split('-');
+                    const date = new Date(year, monthNum - 1);
+                    return date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+                });
+                const data = sortedMonths.map(month => monthlyData[month]);
+
+                if (monthlyChartInstance) monthlyChartInstance.destroy();
+                monthlyChartInstance = new Chart(monthlyChartCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Total Realisasi per Bulan',
+                            data: data,
+                            fill: true,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: (value) => new Intl.NumberFormat('id-ID', { notation: 'compact', compactDisplay: 'short' }).format(value)
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             function renderInputForms() {
                 targetInputFields.innerHTML = taxData.map(tax => `
                     <div>
@@ -424,6 +602,39 @@
                 realizationTaxTypeSelect.innerHTML = taxData.map(tax => `<option value="${tax.id}">${tax.name}</option>`).join('');
                 transactionDateInput.valueAsDate = new Date();
                 updateSubTaxOptions();
+            }
+
+            function filterAndRenderRecap() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+
+                let filteredLogs = transactionLog;
+
+                if (startDate && endDate) {
+                    filteredLogs = transactionLog.filter(log => {
+                        return log.transactionDate >= startDate && log.transactionDate <= endDate;
+                    });
+                } else if (startDate) {
+                     filteredLogs = transactionLog.filter(log => log.transactionDate >= startDate);
+                } else if (endDate) {
+                     filteredLogs = transactionLog.filter(log => log.transactionDate <= endDate);
+                }
+
+                if (filteredLogs.length === 0) {
+                    recapTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">Tidak ada transaksi pada rentang tanggal yang dipilih.</td></tr>`;
+                    return;
+                }
+
+                recapTableBody.innerHTML = filteredLogs.map(log => `
+                     <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="p-4">${log.transactionDate}</td>
+                        <td class="p-4">${log.taxName}</td>
+                        <td class="p-4">${log.subTax}</td>
+                        <td class="p-4 text-right">${formatFullCurrency(log.amount)}</td>
+                        <td class="p-4">${log.paymentMethod}</td>
+                        <td class="p-4">${log.taxDescription}</td>
+                    </tr>
+                `).join('');
             }
 
             function updateSubTaxOptions() {
@@ -587,32 +798,125 @@
                 doc.save('Rincian_Realisasi_Pajak_Daerah.pdf');
             }
 
+            function getFilteredRecapData() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                let filteredLogs = transactionLog;
+
+                if (startDate && endDate) {
+                    filteredLogs = transactionLog.filter(log => log.transactionDate >= startDate && log.transactionDate <= endDate);
+                } else if (startDate) {
+                     filteredLogs = transactionLog.filter(log => log.transactionDate >= startDate);
+                } else if (endDate) {
+                     filteredLogs = transactionLog.filter(log => log.transactionDate <= endDate);
+                }
+                return filteredLogs;
+            }
+
+            function downloadRecapXLSX() {
+                const dataToExport = getFilteredRecapData().map(log => ({
+                    "Tanggal Transaksi": log.transactionDate,
+                    "Jenis Pajak": log.taxName,
+                    "Subjenis Pajak": log.subTax,
+                    "Jumlah": log.amount,
+                    "Metode Pembayaran": log.paymentMethod,
+                    "Keterangan": log.taxDescription,
+                }));
+
+                if(dataToExport.length === 0){
+                    showNotification("Tidak ada data untuk diunduh pada rentang tanggal ini.", true);
+                    return;
+                }
+
+                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Transaksi");
+                
+                worksheet["!cols"] = [ { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 15 } ];
+
+                XLSX.writeFile(workbook, `Rekap_Transaksi_${startDateInput.value}_sd_${endDateInput.value}.xlsx`);
+            }
+            
+            function downloadRecapPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const filteredData = getFilteredRecapData();
+
+                if(filteredData.length === 0){
+                    showNotification("Tidak ada data untuk diunduh pada rentang tanggal ini.", true);
+                    return;
+                }
+                
+                const tableData = filteredData.map(log => [
+                    log.transactionDate,
+                    log.taxName,
+                    log.subTax,
+                    formatFullCurrency(log.amount),
+                    log.paymentMethod,
+                    log.taxDescription
+                ]);
+                
+                const totalAmount = filteredData.reduce((sum, log) => sum + log.amount, 0);
+                const totalRow = [
+                    { content: 'TOTAL', colSpan: 3, styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } },
+                    { content: formatFullCurrency(totalAmount), styles: { fontStyle: 'bold', halign: 'right', fillColor: '#f0f0f0' } },
+                    { content: '', colSpan: 2, styles: { fontStyle: 'bold', fillColor: '#f0f0f0' } },
+                ];
+
+                doc.setFontSize(18);
+                doc.text("Rekapitulasi Transaksi Realisasi", 14, 22);
+                doc.setFontSize(11);
+                doc.setTextColor(100);
+                const tgl = new Date();
+                const dateRange = `Periode: ${startDateInput.value || 'Semua'} s/d ${endDateInput.value || 'Semua'}`;
+                doc.text(dateRange, 14, 29);
+
+                doc.autoTable({
+                    head: [['Tanggal', 'Jenis Pajak', 'Subjenis', 'Jumlah', 'Metode Bayar', 'Keterangan']],
+                    body: tableData,
+                    foot: [totalRow],
+                    startY: 35,
+                    theme: 'grid',
+                    headStyles: { fillColor: [22, 160, 133], textColor: 255 },
+                    footStyles: { textColor: 0, fontStyle: 'bold' },
+                    styles: { halign: 'left', fontSize: 8 },
+                    columnStyles: {
+                        3: { halign: 'right' },
+                    }
+                });
+
+                doc.save(`Rekap_Transaksi_${startDateInput.value}_sd_${endDateInput.value}.pdf`);
+            }
+
 
             function initDashboard() {
                 btnDashboard.addEventListener('click', () => switchView('dashboard'));
                 btnInput.addEventListener('click', () => switchView('input'));
+                btnRecap.addEventListener('click', () => switchView('recap'));
                 
-                downloadMenuButton.addEventListener('click', () => {
-                    downloadMenu.classList.toggle('hidden');
-                });
+                // Main Dashboard Download Menu
+                downloadMenuButton.addEventListener('click', () => downloadMenu.classList.toggle('hidden'));
+                downloadXlsxBtn.addEventListener('click', (e) => { e.preventDefault(); downloadXLSX(); downloadMenu.classList.add('hidden'); });
+                downloadPdfBtn.addEventListener('click', (e) => { e.preventDefault(); downloadPDF(); downloadMenu.classList.add('hidden'); });
+                
+                // Recap Page Download Menu
+                recapDownloadMenuButton.addEventListener('click', () => recapDownloadMenu.classList.toggle('hidden'));
+                recapDownloadXlsxBtn.addEventListener('click', (e) => { e.preventDefault(); downloadRecapXLSX(); recapDownloadMenu.classList.add('hidden'); });
+                recapDownloadPdfBtn.addEventListener('click', (e) => { e.preventDefault(); downloadRecapPDF(); recapDownloadMenu.classList.add('hidden'); });
 
+                // Close dropdowns when clicking outside
                 window.addEventListener('click', function(e) {
                     if (!downloadMenuButton.contains(e.target) && !downloadMenu.contains(e.target)) {
                         downloadMenu.classList.add('hidden');
                     }
-                });
-
-                downloadXlsxBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    downloadXLSX();
-                    downloadMenu.classList.add('hidden');
+                    if (!recapDownloadMenuButton.contains(e.target) && !recapDownloadMenu.contains(e.target)) {
+                        recapDownloadMenu.classList.add('hidden');
+                    }
                 });
                 
-                downloadPdfBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    downloadPDF();
-                    downloadMenu.classList.add('hidden');
-                });
+                // Recap date filters
+                startDateInput.addEventListener('change', filterAndRenderRecap);
+                endDateInput.addEventListener('change', filterAndRenderRecap);
 
                 realizationTaxTypeSelect.addEventListener('change', updateSubTaxOptions);
 
@@ -665,7 +969,7 @@
                         taxItem.realization += amount;
                     }
                     
-                    console.log({
+                    const newTransaction = {
                         taxId: taxId,
                         taxName: taxItem.name,
                         subTax: subTax || 'N/A',
@@ -673,7 +977,8 @@
                         transactionDate: transactionDate,
                         paymentMethod: paymentMethod,
                         taxDescription: taxDescription,
-                    });
+                    };
+                    transactionLog.push(newTransaction);
                     
                     renderAll();
                     showNotification(`Realisasi untuk ${taxItem.name} berhasil ditambahkan!`);
